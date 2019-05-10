@@ -11,6 +11,7 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', 'Controller@index');
+Route::get('/vue', 'Controller@vue');
+
+Route::resource('Articles', 'ArticleController');
