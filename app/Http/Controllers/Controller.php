@@ -25,6 +25,7 @@ class Controller extends BaseController
         return view('vue')->with([
             'sponsors' => Sponsor::all(),
             'articles' => Article::all()
+            
         ]);
     }
 }
