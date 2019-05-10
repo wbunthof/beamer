@@ -29,8 +29,30 @@ Vue.component('productComponent2', require('./components/productComponent.vue').
  */
 
 Vue.component('product', {
-    template: `<div class="product">
-
+    props: {
+        brand: {
+            type: String,
+            required: true,
+        },
+        product: {
+            type: String,
+            required: true
+        },
+        premium: {
+            type: Boolean,
+            required: true
+        },
+        details: {
+            type: Array,
+            required: false
+        },
+        cart: {
+            type: Array,
+            required: true
+        }
+    },
+    template: `
+        <div class="product">
             <div class="product-image">
                 <img :src="image">
             </div>
@@ -40,10 +62,9 @@ Vue.component('product', {
 
                 <p v-if="inStock" >In stock</p>
                 <p v-else style="text-decoration: line-through">Out of stock</p>
+                <p>Shipping: {{ shipping}}</p>
 
-                <ul>
-                    <li v-for="detail in details">{{ detail }}</li>
-                </ul>
+                <productdetails :details="details"></productdetails>
 
                 <div    v-for="(variant, index) in variants"
                         :key="variant.variantId"
@@ -56,22 +77,16 @@ Vue.component('product', {
                         :disabled="!inStock"
                         :class="{disabledButton: !inStock}">Add to Cart</button>
                 <button @click="removeFromCart"
-                        :disabled="cart < 1"
-                        :class="{disabledButton: cart < 1}">Remove</button>
-
-                <div class="cart">
-                    <p>Cart({{ cart }})</p>
-                </div>
-
+                        :disabled="!cart.includes(this.id)"
+                        :class="{disabledButton: !cart.includes(this.id)}">Remove</button>
+                        
+                
             </div>
-
         </div>`,
     data() {
-        return { product: 'Basic Socks',
-            brand: 'Wondersocks',
+        return {
             onSale: true,
             description: 'Here is an awesome description',
-            details: ["80% katoen", "20% polyester", "Unisex"],
             selectedVariant: 0,
             variants: [
             {
@@ -84,7 +99,7 @@ Vue.component('product', {
                 variantId: 2235,
                 variantColor: '#6574cd',
                 variantImage: 'https://images.unsplash.com/photo-1550238310-07b61612e756?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
-                variantQuantity: 0,
+                variantQuantity: 20,
 
             }
         ],
@@ -93,18 +108,14 @@ Vue.component('product', {
             39,
             40,
         ],
-            cart: 0,
         }
     },
     methods:{
         addToCart() {
-            this.cart += 1;
+            this.$emit('update-cart', {amount:1, id:this.id});
         },
         removeFromCart() {
-            if (this.cart > 0){
-                this.cart -=1
-
-            }
+            this.$emit('update-cart', {amount:-1, id:this.id});
         },
         updateProduct(index) {
             this.selectedVariant = index;
@@ -117,19 +128,108 @@ Vue.component('product', {
             }
             return this.brand + ' - ' + this.product;
         },
+        id() {
+            return this.variants[this.selectedVariant].variantId;
+        },
         image() {
             return this.variants[this.selectedVariant].variantImage;
         },
         inStock() {
             return this.variants[this.selectedVariant].variantQuantity;
         },
+        shipping() {
+            if (this.premium) {
+                return 'free';
+            }
+            return '€2,99'
+        }
     }
 });
 
+Vue.component('productdetails',{
+    props: {
+        details: {
+            type: Array,
+            required: true
+        }
+    },
+    template: `
+        <ul>
+            <li v-for="detail in details">{{ detail }}</li>
+        </ul>
+    `
+    });
 
+Vue.component('product-review', {
+    template: `
+    <form class="review-form" @submit.prevent="onSubmit">
+      <p>
+        <label for="name">Name:</label>
+        <input id="name" v-model="name" placeholder="Name">
+      </p>
+      
+      <p>
+        <label for="review">Review:</label>      
+        <textarea id="review" v-model="review" placeholder="Your wonderful review"></textarea>
+      </p>
+      
+      <p>
+        <label for="rating">Rating:</label>
+        <select id="rating" v-model.number="rating">
+          <option>5</option>
+          <option>4</option>
+          <option>3</option>
+          <option>2</option>
+          <option>1</option>
+        </select>
+      </p>
+          
+      <p>
+        <input type="submit" value="Submit">  
+      </p>    
+    
+    </form>`,
+    data() {
+        return {
+            name: null,
+            review: null,
+            rating: null
+        }
+    },
+    methods: {
+        onSubmit() {
+            let productReview = {
+                name: this.name,
+                review: this. review,
+                rating: this.rating
+            };
+
+            this.name = null;
+            this.review = null;
+            this.rating = null;
+        }
+    }
+})
 
 const app = new Vue({
-    el: '#main'});
+    el: '#main',
+    data: {
+        premium: false,
+        cart: [],
+
+    },
+    methods: {
+        updateCart(amountId) {
+            console.log(amountId);
+            if (amountId['amount'] > 0) {
+                this.cart.push(amountId['id']);
+
+            } else if (amountId['amount'] < 0 && this.cart.length > 0) {
+                console.log(this.cart.splice(this.cart.indexOf(amountId['id']), 1));
+            }
+        }
+    }
+});
 
 $('.ticker1, .ticker2').easyTicker({
     direction: 'down',

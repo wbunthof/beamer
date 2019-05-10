@@ -17,7 +17,21 @@
         <div class="nav-bar">
 
         </div>
-        <product></product>
+
+        <product
+            :premium="premium"
+            v-bind:details="['80% katoen', '20% polyester', 'Unisex']"
+            product="Basic Socks"
+            brand="Wondersocks"
+            :cart="cart"
+            @update-cart="updateCart">
+        </product>
+
+        <div class="cart">
+            <p>Cart(@{{ cart.length }})</p>
+        </div>
+
+        <product-review></product-review>
     </div>
 
     <script src="{{ asset('js/app.js') }}"></script>

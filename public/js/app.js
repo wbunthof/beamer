@@ -49242,14 +49242,33 @@ Vue.component('productComponent2', __webpack_require__(/*! ./components/productC
  */
 
 Vue.component('product', {
-  template: "<div class=\"product\">\n\n            <div class=\"product-image\">\n                <img :src=\"image\">\n            </div>\n\n            <div class=\"product-info\">\n                <h1>{{ title }}</h1>\n\n                <p v-if=\"inStock\" >In stock</p>\n                <p v-else style=\"text-decoration: line-through\">Out of stock</p>\n\n                <ul>\n                    <li v-for=\"detail in details\">{{ detail }}</li>\n                </ul>\n\n                <div    v-for=\"(variant, index) in variants\"\n                        :key=\"variant.variantId\"\n                        class=\"color-box\"\n                        :style=\"{ backgroundColor: variant.variantColor}\"\n                        @mouseover=\"updateProduct(index)\">\n                </div>\n\n                <button @click=\"addToCart\"\n                        :disabled=\"!inStock\"\n                        :class=\"{disabledButton: !inStock}\">Add to Cart</button>\n                <button @click=\"removeFromCart\"\n                        :disabled=\"cart < 1\"\n                        :class=\"{disabledButton: cart < 1}\">Remove</button>\n\n                <div class=\"cart\">\n                    <p>Cart({{ cart }})</p>\n                </div>\n\n            </div>\n\n        </div>",
+  props: {
+    brand: {
+      type: String,
+      required: true
+    },
+    product: {
+      type: String,
+      required: true
+    },
+    premium: {
+      type: Boolean,
+      required: true
+    },
+    details: {
+      type: Array,
+      required: false
+    },
+    cart: {
+      type: Array,
+      required: true
+    }
+  },
+  template: "\n        <div class=\"product\">\n            <div class=\"product-image\">\n                <img :src=\"image\">\n            </div>\n\n            <div class=\"product-info\">\n                <h1>{{ title }}</h1>\n\n                <p v-if=\"inStock\" >In stock</p>\n                <p v-else style=\"text-decoration: line-through\">Out of stock</p>\n                <p>Shipping: {{ shipping}}</p>\n\n                <productdetails :details=\"details\"></productdetails>\n\n                <div    v-for=\"(variant, index) in variants\"\n                        :key=\"variant.variantId\"\n                        class=\"color-box\"\n                        :style=\"{ backgroundColor: variant.variantColor}\"\n                        @mouseover=\"updateProduct(index)\">\n                </div>\n\n                <button @click=\"addToCart\"\n                        :disabled=\"!inStock\"\n                        :class=\"{disabledButton: !inStock}\">Add to Cart</button>\n                <button @click=\"removeFromCart\"\n                        :disabled=\"!cart.includes(this.id)\"\n                        :class=\"{disabledButton: !cart.includes(this.id)}\">Remove</button>\n                        \n                \n            </div>\n        </div>",
   data: function data() {
     return {
-      product: 'Basic Socks',
-      brand: 'Wondersocks',
       onSale: true,
       description: 'Here is an awesome description',
-      details: ["80% katoen", "20% polyester", "Unisex"],
       selectedVariant: 0,
       variants: [{
         variantId: 2234,
@@ -49260,20 +49279,23 @@ Vue.component('product', {
         variantId: 2235,
         variantColor: '#6574cd',
         variantImage: 'https://images.unsplash.com/photo-1550238310-07b61612e756?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80',
-        variantQuantity: 0
+        variantQuantity: 20
       }],
-      sizes: [38, 39, 40],
-      cart: 0
+      sizes: [38, 39, 40]
     };
   },
   methods: {
     addToCart: function addToCart() {
-      this.cart += 1;
+      this.$emit('update-cart', {
+        amount: 1,
+        id: this.id
+      });
     },
     removeFromCart: function removeFromCart() {
-      if (this.cart > 0) {
-        this.cart -= 1;
-      }
+      this.$emit('update-cart', {
+        amount: -1,
+        id: this.id
+      });
     },
     updateProduct: function updateProduct(index) {
       this.selectedVariant = index;
@@ -49287,16 +49309,72 @@ Vue.component('product', {
 
       return this.brand + ' - ' + this.product;
     },
+    id: function id() {
+      return this.variants[this.selectedVariant].variantId;
+    },
     image: function image() {
       return this.variants[this.selectedVariant].variantImage;
     },
     inStock: function inStock() {
       return this.variants[this.selectedVariant].variantQuantity;
+    },
+    shipping: function shipping() {
+      if (this.premium) {
+        return 'free';
+      }
+
+      return '€2,99';
+    }
+  }
+});
+Vue.component('productdetails', {
+  props: {
+    details: {
+      type: Array,
+      required: true
+    }
+  },
+  template: "\n        <ul>\n            <li v-for=\"detail in details\">{{ detail }}</li>\n        </ul>\n    "
+});
+Vue.component('product-review', {
+  template: "\n    <form class=\"review-form\" @submit.prevent=\"onSubmit\">\n      <p>\n        <label for=\"name\">Name:</label>\n        <input id=\"name\" v-model=\"name\" placeholder=\"Name\">\n      </p>\n      \n      <p>\n        <label for=\"review\">Review:</label>      \n        <textarea id=\"review\" v-model=\"review\" placeholder=\"Your wonderful review\"></textarea>\n      </p>\n      \n      <p>\n        <label for=\"rating\">Rating:</label>\n        <select id=\"rating\" v-model.number=\"rating\">\n          <option>5</option>\n          <option>4</option>\n          <option>3</option>\n          <option>2</option>\n          <option>1</option>\n        </select>\n      </p>\n          \n      <p>\n        <input type=\"submit\" value=\"Submit\">  \n      </p>    \n    \n    </form>",
+  data: function data() {
+    return {
+      name: null,
+      review: null,
+      rating: null
+    };
+  },
+  methods: {
+    onSubmit: function onSubmit() {
+      var productReview = {
+        name: this.name,
+        review: this.review,
+        rating: this.rating
+      };
+      this.name = null;
+      this.review = null;
+      this.rating = null;
     }
   }
 });
 var app = new Vue({
-  el: '#main'
+  el: '#main',
+  data: {
+    premium: false,
+    cart: []
+  },
+  methods: {
+    updateCart: function updateCart(amountId) {
+      console.log(amountId);
+
+      if (amountId['amount'] > 0) {
+        this.cart.push(amountId['id']);
+      } else if (amountId['amount'] < 0 && this.cart.length > 0) {
+        console.log(this.cart.splice(this.cart.indexOf(amountId['id']), 1));
+      }
+    }
+  }
 });
 $('.ticker1, .ticker2').easyTicker({
   direction: 'down',
